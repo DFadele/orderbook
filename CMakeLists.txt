@@ -26,6 +26,7 @@ find_package(nlohmann_json CONFIG REQUIRED)
 # Source files 
 add_executable(orderbook
     src/main.cpp
+    src/OrderBook.cpp
     src/utils/logger.cpp
 )
 
