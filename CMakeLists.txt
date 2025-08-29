@@ -26,7 +26,10 @@ find_package(nlohmann_json CONFIG REQUIRED)
 # Source files 
 add_executable(orderbook
     src/main.cpp
+    src/utils/logger.cpp
 )
+
+target_include_directories(orderbook PRIVATE include)
 
 # Link dependencies to the target
 target_link_libraries(orderbook
