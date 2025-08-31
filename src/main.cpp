@@ -5,17 +5,10 @@
 #include <ixwebsocket/IXWebSocket.h>
 #include <nlohmann/json.hpp>
 #include <utils/logger.hpp>
+#include <orderbook/orderbook.hpp>
 
 using json = nlohmann::json;
 
-struct ConnData {
-    std::string product;
-    std::size_t count;
-};
-
-struct OrderBook {
-
-};
 
 int main(int argc, char *argv[]) {
     std::string product(argc > 1 ? argv[1] : "BTC-USD");
@@ -26,6 +19,7 @@ int main(int argc, char *argv[]) {
     ws.setPingInterval(30);
  
     ws.setOnMessageCallback([&ws, &product](const ix::WebSocketMessagePtr &msg){
+        OrderBook book;
         if (msg->type == ix::WebSocketMessageType::Open){
             std::cout << "Connected \n";
             std::cout << "Press Enter to quit...\n \n";
@@ -33,7 +27,7 @@ int main(int argc, char *argv[]) {
             auto sub = json{
                 {"type", "subscribe"},
                 {"product_ids", {product}},
-                {"channels", {"heartbeat", "ticker"}},
+                {"channels", {"level2", "heartbeat", "ticker"}},
             };
             ws.send(sub.dump());
         }
@@ -46,6 +40,17 @@ int main(int argc, char *argv[]) {
             try
             {
                 const auto j = json::parse(msg->str);
+                const auto type = j.value("type", "");
+
+                if (type == "snapshot") {
+                    book.applySnapshot(j);
+                    book.printTOB();
+                }
+                else if (type == "l2update") {
+                    book.applyL2Update(j);
+                    book.printTOB();
+                }
+                else
                 printMessage(j);
             }
             catch(const std::exception& e)

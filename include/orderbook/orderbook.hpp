@@ -21,5 +21,7 @@ class OrderBook {
         std::map<double, double> asks_;
 
         static double to_double(const std::string &s);
-        static void setLevel(std::map<double, double> &book, double price, double size);
+
+        template <typename MapT>
+        static void setLevel(MapT &book, double price, double size);
 };
