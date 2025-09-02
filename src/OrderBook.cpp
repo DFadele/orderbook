@@ -59,7 +59,7 @@ std::pair<double, double> OrderBook::topOfBook() const {
 
 void OrderBook::printTOB() const {
     auto [bb, ba] = topOfBook();
-    double spread = bb - ba;
+    double spread = ba - bb;
     double mid = (ba+bb) /2.0;
     std::cout << "[TOB] bid " << bb 
               << "  ask " << ba
