@@ -51,6 +51,6 @@ void printMessage(const json &j){
                     << j.value("time", "") << '\n';
     }
     else {
-        /**/
+        std::cout << "[OTHER] " << type << " " << j.value("message",j) << "\n";
     }
 }

@@ -12,14 +12,14 @@ using json = nlohmann::json;
 
 int main(int argc, char *argv[]) {
     std::string product(argc > 1 ? argv[1] : "BTC-USD");
-
+    OrderBook book;
     ix::WebSocket ws;
     auto url = std::string{"wss://ws-feed.exchange.coinbase.com"};
     ws.setUrl(url);
     ws.setPingInterval(30);
  
-    ws.setOnMessageCallback([&ws, &product](const ix::WebSocketMessagePtr &msg){
-        OrderBook book;
+    ws.setOnMessageCallback([&ws, &product, &book](const ix::WebSocketMessagePtr &msg){
+
         if (msg->type == ix::WebSocketMessageType::Open){
             std::cout << "Connected \n";
             std::cout << "Press Enter to quit...\n \n";
@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
             auto sub = json{
                 {"type", "subscribe"},
                 {"product_ids", {product}},
-                {"channels", {"level2", "heartbeat", "ticker"}},
+                {"channels", {"level2_batch"}},
             };
             ws.send(sub.dump());
         }

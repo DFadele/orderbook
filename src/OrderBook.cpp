@@ -7,18 +7,20 @@ double OrderBook::to_double(const std::string &s){
 }
 
 template <typename MapT>
-void OrderBook::setLevel(MapT &book, double price, double size){
+int OrderBook::setLevel(MapT &book, double price, double size){
+    // 0 = insert, 1 = modify, 2=erase, 3 = no-op
     if (size == 0.0) {
         auto it = book.find(price);
-        if (it != book.end()) book.erase(it);
+        if (it != book.end()) {book.erase(it); return 2;}
+        return 3;
     } else {
-        book[price] = size;
+        auto [it, inserted] = book.insert_or_assign(price, size);
+        return inserted? 0:1;
     }
 }
 
 void OrderBook::applySnapshot(const nlohmann::json &j) {
     bids_.clear(); asks_.clear();
-
     for (const auto &row: j["bids"]) {
         double p = to_double(row.at(0).get<std::string>()); //price
         double s = to_double(row.at(1).get<std::string>()); //size
@@ -29,15 +31,23 @@ void OrderBook::applySnapshot(const nlohmann::json &j) {
         double s = to_double(row.at(1).get<std::string>());
         OrderBook::setLevel(asks_, p, s);
     }
+    metrics_.snapshots ++;
 }
 
 void OrderBook::applyL2Update(const nlohmann::json &j) {
+    metrics_.updates++;
     for (const auto &ch: j["changes"]) {
         const auto side = ch.at(0).get<std::string>();
         double price = to_double(ch.at(1).get<std::string>());
         double size = to_double(ch.at(2).get<std::string>());
-        if (side == "buy") setLevel(bids_, price, size);
-        else setLevel(asks_, price, size);
+        
+        int kind = (side=="buy")? 
+                    setLevel(bids_, price, size):setLevel(asks_, price, size);
+
+        metrics_.changes++;
+        if (kind==0) metrics_.inserts ++;
+        else if (kind==1) metrics_.modifies++;
+        else if (kind==2) metrics_.erases++;
     }
 }
 
@@ -49,5 +59,11 @@ std::pair<double, double> OrderBook::topOfBook() const {
 
 void OrderBook::printTOB() const {
     auto [bb, ba] = topOfBook();
-    std::cout << "[TOB] bid " << bb << "  ask " << ba << '\n';
+    double spread = bb - ba;
+    double mid = (ba+bb) /2.0;
+    std::cout << "[TOB] bid " << bb 
+              << "  ask " << ba
+              << " spread " << spread
+              << " mid " << mid << '\n';
+    if (bb >= ba) std::cerr << "WARNING: crossed book \n";
 }
